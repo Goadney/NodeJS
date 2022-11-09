@@ -2,9 +2,16 @@
 var bcrypt = require('bcrypt');
 var jwtUtils = require('../utils/jwt.utils');
 var models = require ('../models');
-
+var asncLib = require ('async');
+//const
+const EMAIL_REGEX = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const PASSWORD_REGEX = /^(?=.*\d).{4,8}$/;
 // Routes 
 module.exports = {
+
+
+    
+// REGISTER *------------------------------------------------------------------------------------------------------------------------------*
     register: function(req, res){ 
         
         //Params 
@@ -18,6 +25,18 @@ module.exports = {
         }
         
         //verifier la longueur des pseudo mail etc TODO
+        if (username.lenth >= 13 || username.lenth <= 4) {
+            return res.status(400).json({'error': 'Le pseudo doit faire entre 4 et 13 caractères'});
+
+         }
+        if(!EMAIL_REGEX.test(email)){ 
+            return res.status(400).json({'error': 'l\'email n\'est pas valide'});
+
+
+        }
+        if(!PASSWORD_REGEX.test(password)){ 
+            return res.status(400).json({'error': 'password must lenth 4-8 and include 1 number'});
+        }
         
         // l'utilisateur existe?
         models.User.findOne({ 
@@ -56,6 +75,9 @@ module.exports = {
         });
     },
 
+
+
+// LOGIN *------------------------------------------------------------------------------------------------------------------------------*
     login: function(req, res){
 
         //params 
