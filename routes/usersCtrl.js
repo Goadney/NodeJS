@@ -2,10 +2,10 @@
 var bcrypt = require('bcrypt');
 var jwtUtils = require('../utils/jwt.utils');
 var models = require ('../models');
-var asncLib = require ('async');
+var asyncLib = require ('async');
 //const
 const EMAIL_REGEX = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-const PASSWORD_REGEX = /^(?=.*\d).{4,8}$/;
+const PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{8,}$/;
 // Routes 
 module.exports = {
 
@@ -17,7 +17,7 @@ module.exports = {
         //Params 
         var email = req.body.email;
         var username = req.body.username;
-        var password = req.body.username;
+        var password = req.body.password;
         var bio = req.body.bio;
         
         if (email ==null || username == null || password == null) {
@@ -31,14 +31,13 @@ module.exports = {
          }
         if(!EMAIL_REGEX.test(email)){ 
             return res.status(400).json({'error': 'l\'email n\'est pas valide'});
-
-
         }
         if(!PASSWORD_REGEX.test(password)){ 
-            return res.status(400).json({'error': 'password must lenth 4-8 and include 1 number'});
+            return res.status(400).json({'error': ' Min 8 char, une maj une min, un digit'});
         }
         
         // l'utilisateur existe?
+        asyncLib
         models.User.findOne({ 
             attributes: ['email'],
             where: { email: email }
@@ -59,7 +58,7 @@ module.exports = {
                     })
                 .catch(function(err){ 
                     return res.status(500).json({'error': 'L\'utilisateur n\'a pas pu être crée.'});
-                });
+                })
                 })
 
                 });
@@ -72,7 +71,7 @@ module.exports = {
         .catch(function(err){ 
             return res.status(500).json({'error': 'impossible de vérifier l\'utilisateur'});
 
-        });
+        })
     },
 
 
@@ -110,12 +109,37 @@ module.exports = {
         .catch(function(err){ 
             return res.status(500).json({'error':'impossible de vérifier si l\'utilisateur existe'});
         })
+        
+    
 
+        
+
+    },
+    getUserProfile: function(req,res){ 
+        //recup le header 
+        var headerAuth = req.headers['authorization'];
+        var userId = jwtUtils.getUserId(headerAuth);
+        
+        if(userId <0) { 
+            return res.status(400).json({'error':'wrong token or expirate (1h)'});
+        }
+
+        models.User.findOne({ 
+            attributes: ['id','email','username','bio'],
+            where: {id: userId}
+        })
+        .then(function(user){ 
+            if (user) { 
+                res.status(201).json(user);
+            }else {
+                res.status(404).json({'error':'utilisateur introuvable'});
+            }
+        
+        })
+        .catch(function(err){ 
+            res.status(500).jsoon({'error':'cannot fetch user'});
+        });
     }
-}
+    
 
-/*     email: DataTypes.STRING,
-    username: DataTypes.STRING,
-    password: DataTypes.STRING,
-    bio: DataTypes.STRING,
-    isAdmin: DataTypes.BOOLEAN */ 
+}
