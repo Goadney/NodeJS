@@ -139,6 +139,47 @@ module.exports = {
         .catch(function(err){ 
             res.status(500).jsoon({'error':'cannot fetch user'});
         });
+    },
+
+    userUpdate: function(req,res){ 
+        
+        var headerAuth  = req.headers['authorization'];
+        var userId = jwtUtils.getUserId(headerAuth);    
+        // Params
+        var bio = req.body.bio;
+
+        asyncLib.waterfall([
+            function(done) {
+              models.User.findOne({
+                attributes: ['id', 'bio'],
+                where: { id: userId }
+              }).then(function (userFound) {
+                done(null, userFound);
+              })
+              .catch(function(err) {
+                return res.status(500).json({ 'error': 'unable to verify user' });
+              });
+            },
+            function(userFound, done) {
+              if(userFound) {
+                userFound.update({
+                  bio: (bio ? bio : userFound.bio)
+                }).then(function() {
+                  done(userFound);
+                }).catch(function(err) {
+                  res.status(500).json({ 'error': 'cannot update user' });
+                });
+              } else {
+                res.status(404).json({ 'error': 'user not found' });
+              }
+            },
+          ], function(userFound) {
+            if (userFound) {
+              return res.status(201).json(userFound);
+            } else {
+              return res.status(500).json({ 'error': 'cannot update user profile' });
+            }
+          });
     }
     
 
